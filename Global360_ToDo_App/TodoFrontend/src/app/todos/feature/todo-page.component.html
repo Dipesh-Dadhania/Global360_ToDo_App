@@ -1,0 +1,45 @@
+<main class="todo-page">
+  <h1>Todo List</h1>
+
+  <form class="todo-form" [formGroup]="todoForm" (ngSubmit)="addTodo()">
+    <label for="title">New todo</label>
+    <div class="todo-form__controls">
+      <input
+        id="title"
+        type="text"
+        [formControl]="titleControl"
+        placeholder="Enter a task"
+        maxlength="200"
+      />
+      <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Adding...' : 'Add' }}</button>
+    </div>
+    @if (titleControl.invalid && (hasSubmitted() || titleControl.dirty)) {
+      <p class="validation">Title is required.</p>
+    }
+  </form>
+
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
+  }
+
+  @if (isLoading()) {
+    <p>Loading todos...</p>
+  } @else {
+    <ul class="todo-list">
+      @for (todo of todos(); track trackById($index, todo)) {
+        <li>
+          <span>{{ todo.title }}</span>
+          <button
+            type="button"
+            (click)="deleteTodo($event, todo.id)"
+            [disabled]="deletingTodoIds().has(todo.id)"
+          >
+            {{ deletingTodoIds().has(todo.id) ? 'Deleting...' : 'Delete' }}
+          </button>
+        </li>
+      } @empty {
+        <li class="empty-state">No todo items yet.</li>
+      }
+    </ul>
+  }
+</main>
