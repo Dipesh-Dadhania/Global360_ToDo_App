@@ -2,14 +2,13 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
-
 import { TodoApiService } from '../data-access/todo-api.service';
 import { TodoPageComponent } from './todo-page.component';
-import { CreateTodoRequest, Todo } from '../models/todo';
+import { CreateTodoRequest, ToDo } from '../models/todo';
 
 class TodoApiServiceMock {
   getTodos() {
-    return of<Todo[]>([
+    return of<ToDo[]>([
       {
         id: '1',
         title: 'First',
@@ -20,7 +19,7 @@ class TodoApiServiceMock {
   }
 
   addTodo(request: CreateTodoRequest) {
-    return of<Todo>({
+    return of<ToDo>({
       id: '2',
       title: request.title,
       isCompleted: false,
@@ -68,13 +67,17 @@ describe('TodoPageComponent', () => {
 
   it('deletes a todo item', () => {
     const deleteSpy = vi.spyOn(service, 'deleteTodo');
+    const event = {
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+    } as unknown as Event;
 
-    component.deleteTodo('1');
+    component.deleteTodo(event, '1');
     fixture.detectChanges();
 
     expect(deleteSpy).toHaveBeenCalledWith('1');
     const listItems = fixture.debugElement.queryAll(By.css('.todo-list li'));
     expect(listItems.length).toBe(1);
-    expect(listItems[0].nativeElement.textContent).toContain('No todo items yet.');
+    expect(listItems[0].nativeElement.textContent).toContain('No To-Do items yet.');
   });
 });

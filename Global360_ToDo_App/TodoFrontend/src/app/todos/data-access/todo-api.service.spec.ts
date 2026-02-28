@@ -1,9 +1,8 @@
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-
 import { TodoApiService } from './todo-api.service';
-import { Todo } from '../models/todo';
+import { ToDo } from '../models/todo';
 
 describe('TodoApiService', () => {
   let service: TodoApiService;
@@ -23,7 +22,7 @@ describe('TodoApiService', () => {
   });
 
   it('fetches todos', () => {
-    const response: Todo[] = [
+    const response: ToDo[] = [
       {
         id: '0f6f808d-b95a-49a7-ae79-916267f73e7f',
         title: 'Test item',
@@ -42,7 +41,7 @@ describe('TodoApiService', () => {
   });
 
   it('creates a todo', () => {
-    const response: Todo = {
+    const response: ToDo = {
       id: '0f6f808d-b95a-49a7-ae79-916267f73e7f',
       title: 'New task',
       isCompleted: false,

@@ -5,7 +5,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TodoApiService } from '../data-access/todo-api.service';
-import { Todo } from '../models/todo';
+import { ToDo } from '../models/todo';
 
 @Component({
   selector: 'app-todo-page',
@@ -28,7 +28,7 @@ export class TodoPageComponent {
     title: this.titleControl,
   });
 
-  readonly todos = signal<Todo[]>([]);
+  readonly todos = signal<ToDo[]>([]);
   readonly searchText = signal('');
   readonly hasTodos = computed(() => this.todos().length > 0);
   readonly hasSearchQuery = computed(() => this.searchText().trim().length > 0);
@@ -88,7 +88,7 @@ export class TodoPageComponent {
           this.hasSubmitted.set(false);
         },
         error: () => {
-          this.errorMessage.set('Unable to add todo item. Please try again.');
+          this.errorMessage.set('Unable to add To-Do item. Please try again.');
         },
       });
   }
@@ -126,10 +126,10 @@ export class TodoPageComponent {
 
             return nextTodos;
           });
-          this.showSuccess('To Do item successfully deleted.');
+          this.showSuccess('To-Do item successfully deleted.');
         },
         error: () => {
-          this.errorMessage.set('Unable to delete todo item. Please try again.');
+          this.errorMessage.set('Unable to delete To-Do item. Please try again.');
         },
       });
   }
@@ -170,12 +170,12 @@ export class TodoPageComponent {
           );
         },
         error: () => {
-          this.errorMessage.set('Unable to update todo item. Please try again.');
+          this.errorMessage.set('Unable to update To-Do item. Please try again.');
         },
       });
   }
 
-  startEditing(todo: Todo): void {
+  startEditing(todo: ToDo): void {
     if (this.isUpdatingTitle()) {
       return;
     }
@@ -245,7 +245,7 @@ export class TodoPageComponent {
             return;
           }
 
-          this.errorMessage.set('Unable to edit todo item. Please try again.');
+          this.errorMessage.set('Unable to edit To-Do item. Please try again.');
         },
       });
   }
@@ -258,7 +258,7 @@ export class TodoPageComponent {
     return (event.target as HTMLInputElement).checked;
   }
 
-  trackById(index: number, todo: Todo): string {
+  trackById(index: number, todo: ToDo): string {
     return todo.id;
   }
 
@@ -288,12 +288,12 @@ export class TodoPageComponent {
           }
         },
         error: () => {
-          this.errorMessage.set('Unable to load todo items. Please ensure the API is running.');
+          this.errorMessage.set('Unable to load To-Do items. Please ensure the API is running.');
         },
       });
   }
 
-  private sortTodos(todos: Todo[]): Todo[] {
+  private sortTodos(todos: ToDo[]): ToDo[] {
     return [...todos].sort((first, second) => {
       if (first.isCompleted !== second.isCompleted) {
         return first.isCompleted ? 1 : -1;

@@ -16,7 +16,7 @@ public class TodosController : ControllerBase
         _service = service;
     }
 
-    /// <summary>Gets all todo items.</summary>
+    /// <summary>Gets all To-Do items.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<TodoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -25,7 +25,7 @@ public class TodosController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Gets a single todo item by id.</summary>
+    /// <summary>Gets a single To-Do item by id.</summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(TodoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -37,7 +37,7 @@ public class TodosController : ControllerBase
         return Ok(item);
     }
 
-    /// <summary>Creates a new todo item.</summary>
+    /// <summary>Creates a new To-Do item.</summary>
     [HttpPost]
     [ProducesResponseType(typeof(TodoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -47,7 +47,7 @@ public class TodosController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    /// <summary>Updates an existing todo item title.</summary>
+    /// <summary>Updates an existing To-Do item title.</summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(TodoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -61,7 +61,7 @@ public class TodosController : ControllerBase
         return Ok(updated);
     }
 
-    /// <summary>Marks a todo item as completed.</summary>
+    /// <summary>Marks a To-Do item as completed.</summary>
     [HttpPut("{id:guid}/mark-as-completed")]
     [ProducesResponseType(typeof(TodoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -74,7 +74,7 @@ public class TodosController : ControllerBase
         return Ok(updated);
     }
 
-    /// <summary>Deletes a todo item.</summary>
+    /// <summary>Deletes a To-Do item.</summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
