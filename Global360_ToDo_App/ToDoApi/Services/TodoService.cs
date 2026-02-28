@@ -32,7 +32,8 @@ public class TodoService : ITodoService
 
         var item = new TodoItem
         {
-            Title = request.Title.Trim()
+            Title = request.Title.Trim(),
+            Description = request.Description?.Trim() ?? string.Empty
         };
 
         var created = await _repository.AddAsync(item, cancellationToken);
@@ -44,7 +45,11 @@ public class TodoService : ITodoService
         if (string.IsNullOrWhiteSpace(request.Title))
             throw new ArgumentException("Title cannot be empty.", nameof(request));
 
-        var updated = await _repository.UpdateTitleAsync(id, request.Title.Trim(), cancellationToken);
+        var updated = await _repository.UpdateAsync(
+            id,
+            request.Title.Trim(),
+            request.Description?.Trim() ?? string.Empty,
+            cancellationToken);
         return updated is null ? null : MapToResponse(updated);
     }
 
@@ -63,6 +68,7 @@ public class TodoService : ITodoService
     {
         Id = item.Id,
         Title = item.Title,
+        Description = item.Description,
         IsCompleted = item.IsCompleted,
         CreatedAt = item.CreatedAt
     };

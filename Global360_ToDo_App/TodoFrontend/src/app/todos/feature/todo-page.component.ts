@@ -24,9 +24,14 @@ export class TodoPageComponent {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(200)],
   });
+  readonly descriptionControl = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.maxLength(500)],
+  });
 
   readonly todoForm = new FormGroup({
     title: this.titleControl,
+    description: this.descriptionControl,
   });
 
   readonly todos = signal<ToDo[]>([]);
@@ -39,17 +44,27 @@ export class TodoPageComponent {
       return this.todos();
     }
 
-    return this.todos().filter((todo) => todo.title.toLowerCase().startsWith(search));
+    return this.todos().filter((todo) =>
+      `${todo.title} ${todo.description}`
+        .toLowerCase()
+        .split(/\s+/)
+        .some((word) => word.startsWith(search)),
+    );
   });
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly deletingTodoIds = signal<Set<string>>(new Set());
   readonly updatingTodoIds = signal<Set<string>>(new Set());
+  readonly expandedTodoIds = signal<Set<string>>(new Set());
   readonly editingTodoId = signal<string | null>(null);
   readonly isUpdatingTitle = signal(false);
   readonly editTitleControl = new FormControl('', {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(200)],
+  });
+  readonly editDescriptionControl = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.maxLength(500)],
   });
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
@@ -76,16 +91,19 @@ export class TodoPageComponent {
     this.isSaving.set(true);
     this.errorMessage.set('');
 
+    const description = this.descriptionControl.value.trim();
+
     this.todoApiService
-      .addTodo({ title })
+      .addTodo({ title, description })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.isSaving.set(false)),
       )
       .subscribe({
         next: (createdTodo) => {
-          this.todos.update((currentTodos) => this.sortTodos([createdTodo, ...currentTodos]));
-          this.todoForm.reset({ title: '' });
+          const normalizedCreatedTodo = this.normalizeTodo(createdTodo, description);
+          this.todos.update((currentTodos) => this.sortTodos([normalizedCreatedTodo, ...currentTodos]));
+          this.todoForm.reset({ title: '', description: '' });
           this.hasSubmitted.set(false);
         },
         error: () => {
@@ -127,6 +145,11 @@ export class TodoPageComponent {
 
             return nextTodos;
           });
+          this.expandedTodoIds.update((currentSet) => {
+            const nextSet = new Set(currentSet);
+            nextSet.delete(id);
+            return nextSet;
+          });
           this.showSuccess('To-Do item successfully deleted.');
         },
         error: () => {
@@ -165,7 +188,9 @@ export class TodoPageComponent {
           this.todos.update((currentTodos) =>
             this.sortTodos(
               currentTodos.map((currentTodo) =>
-                currentTodo.id === updatedTodo.id ? updatedTodo : currentTodo,
+                currentTodo.id === updatedTodo.id
+                  ? this.normalizeTodo(updatedTodo, currentTodo.description)
+                  : currentTodo,
               ),
             ),
           );
@@ -183,13 +208,17 @@ export class TodoPageComponent {
 
     this.editingTodoId.set(todo.id);
     this.editTitleControl.setValue(todo.title);
+    this.editDescriptionControl.setValue(todo.description ?? '');
     this.editTitleControl.markAsPristine();
     this.editTitleControl.markAsUntouched();
+    this.editDescriptionControl.markAsPristine();
+    this.editDescriptionControl.markAsUntouched();
   }
 
   cancelEditing(): void {
     this.editingTodoId.set(null);
     this.editTitleControl.reset('', { emitEvent: false });
+    this.editDescriptionControl.reset('', { emitEvent: false });
   }
 
   saveEditedTodo(id: string): void {
@@ -209,13 +238,14 @@ export class TodoPageComponent {
     }
 
     const title = this.editTitleControl.value.trim();
+    const description = this.editDescriptionControl.value.trim();
     if (!title) {
       this.editTitleControl.setErrors({ required: true });
       this.editTitleControl.markAsTouched();
       return;
     }
 
-    if (title === todo.title) {
+    if (title === todo.title && description === (todo.description ?? '')) {
       this.cancelEditing();
       return;
     }
@@ -224,17 +254,18 @@ export class TodoPageComponent {
     this.isUpdatingTitle.set(true);
 
     this.todoApiService
-      .updateTodo(id, { title })
+      .updateTodo(id, { title, description })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.isUpdatingTitle.set(false)),
       )
       .subscribe({
         next: (updatedTodo) => {
+          const normalizedUpdatedTodo = this.normalizeTodo(updatedTodo, description);
           this.todos.update((currentTodos) =>
             this.sortTodos(
               currentTodos.map((currentTodo) =>
-                currentTodo.id === updatedTodo.id ? updatedTodo : currentTodo,
+                currentTodo.id === normalizedUpdatedTodo.id ? normalizedUpdatedTodo : currentTodo,
               ),
             ),
           );
@@ -255,6 +286,23 @@ export class TodoPageComponent {
     return this.editingTodoId() === todoId;
   }
 
+  toggleDescription(id: string): void {
+    this.expandedTodoIds.update((currentSet) => {
+      const nextSet = new Set(currentSet);
+      if (nextSet.has(id)) {
+        nextSet.delete(id);
+      } else {
+        nextSet.add(id);
+      }
+
+      return nextSet;
+    });
+  }
+
+  isDescriptionExpanded(id: string): boolean {
+    return this.expandedTodoIds().has(id);
+  }
+
   getCheckedState(event: Event): boolean {
     return (event.target as HTMLInputElement).checked;
   }
@@ -271,6 +319,37 @@ export class TodoPageComponent {
     this.searchText.set('');
   }
 
+  getHighlightedText(value: string): string {
+    const search = this.searchText().trim();
+    if (!search) {
+      return this.escapeHtml(value);
+    }
+
+    const pattern = new RegExp(`\\b${this.escapeRegExp(search)}`, 'gi');
+    let result = '';
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    match = pattern.exec(value);
+    while (match) {
+      const start = match.index;
+      const end = start + match[0].length;
+
+      result += this.escapeHtml(value.slice(lastIndex, start));
+      result += `<mark class="todo-highlight">${this.escapeHtml(value.slice(start, end))}</mark>`;
+
+      lastIndex = end;
+      if (pattern.lastIndex === match.index) {
+        pattern.lastIndex++;
+      }
+
+      match = pattern.exec(value);
+    }
+
+    result += this.escapeHtml(value.slice(lastIndex));
+    return result;
+  }
+
   private loadTodos(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -283,7 +362,7 @@ export class TodoPageComponent {
       )
       .subscribe({
         next: (todos) => {
-          this.todos.set(this.sortTodos(todos));
+          this.todos.set(this.sortTodos(todos.map((todo) => this.normalizeTodo(todo))));
           if (todos.length === 0) {
             this.clearSearch();
           }
@@ -314,5 +393,25 @@ export class TodoPageComponent {
       this.successMessage.set('');
       this.successTimeoutId = null;
     }, 3000);
+  }
+
+  private normalizeTodo(todo: ToDo, fallbackDescription: string = ''): ToDo {
+    return {
+      ...todo,
+      description: (todo.description ?? fallbackDescription).trim(),
+    };
+  }
+
+  private escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }

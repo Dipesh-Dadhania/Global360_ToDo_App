@@ -15,6 +15,13 @@
       />
       <button class="btn btn-primary" type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Adding...' : 'Add' }}</button>
     </div>
+    <textarea
+      id="description"
+      [formControl]="descriptionControl"
+      placeholder="Enter description (optional)..."
+      maxlength="500"
+      rows="2"
+    ></textarea>
     @if (titleControl.invalid && (hasSubmitted() || titleControl.dirty)) {
       <p class="validation">Title is required.</p>
     }
@@ -49,21 +56,26 @@
     <section class="empty-thinking card" aria-live="polite">
       <mat-icon class="empty-thinking__icon">emoji_objects</mat-icon>
       <h2>Nothing here yet</h2>
-      <p>Start by adding a To-Do title.</p>
+      <p>Start by adding a To-Do title and optional description.</p>
     </section>
   } @else {
     <ul class="todo-list card">
       @for (todo of filteredTodos(); track trackById($index, todo)) {
         <li>
           <div class="todo-main">
-            <label class="todo-checkbox" aria-label="Toggle completed state">
-              <input
-                type="checkbox"
-                [checked]="todo.isCompleted"
-                (change)="setTodoCompleted(todo.id, getCheckedState($event))"
-                [disabled]="updatingTodoIds().has(todo.id)"
-              />
-            </label>
+            <button
+              class="todo-checkbox"
+              type="button"
+              (click)="setTodoCompleted(todo.id, !todo.isCompleted)"
+              [disabled]="updatingTodoIds().has(todo.id)"
+              [attr.aria-label]="todo.isCompleted ? 'Mark as incomplete' : 'Mark as complete'"
+            >
+              @if (todo.isCompleted) {
+                <mat-icon>check_box</mat-icon>
+              } @else {
+                <mat-icon>check_box_outline_blank</mat-icon>
+              }
+            </button>
 
             <div class="todo-content">
               @if (isEditing(todo.id)) {
@@ -73,13 +85,38 @@
                   [formControl]="editTitleControl"
                   maxlength="200"
                 />
+                <textarea
+                  class="todo-edit-input"
+                  [formControl]="editDescriptionControl"
+                  maxlength="500"
+                  rows="2"
+                ></textarea>
                 @if (editTitleControl.invalid && editTitleControl.touched) {
                   <small class="validation">Title is required.</small>
                 }
               } @else {
-                <span [class.todo-completed]="todo.isCompleted">
-                  {{ todo.title }}
-                </span>
+                <div class="todo-title-row">
+                  <span [class.todo-completed]="todo.isCompleted" [innerHTML]="getHighlightedText(todo.title)"></span>
+                  <button
+                    class="btn btn-ghost todo-arrow-btn"
+                    type="button"
+                    (click)="toggleDescription(todo.id)"
+                    [attr.aria-label]="isDescriptionExpanded(todo.id) ? 'Hide description' : 'Show description'"
+                  >
+                    @if (isDescriptionExpanded(todo.id)) {
+                      <mat-icon>expand_less</mat-icon>
+                    } @else {
+                      <mat-icon>expand_more</mat-icon>
+                    }
+                  </button>
+                </div>
+                @if (isDescriptionExpanded(todo.id)) {
+                  @if (todo.description) {
+                    <small class="todo-description" [innerHTML]="getHighlightedText(todo.description)"></small>
+                  } @else {
+                    <small class="todo-description todo-description--empty">No description available.</small>
+                  }
+                }
               }
               <small class="todo-created">{{ todo.createdAt | date: 'dd MMM yyyy, hh:mm a' }}</small>
             </div>

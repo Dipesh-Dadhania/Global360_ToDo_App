@@ -47,7 +47,7 @@ public class TodosController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    /// <summary>Updates an existing To-Do item title.</summary>
+    /// <summary>Updates an existing To-Do item title and description.</summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(TodoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -26,6 +26,7 @@ describe('TodoApiService', () => {
       {
         id: '0f6f808d-b95a-49a7-ae79-916267f73e7f',
         title: 'Test item',
+        description: 'Test description',
         isCompleted: false,
         createdAt: '2026-02-28T10:00:00Z',
       },
@@ -44,17 +45,18 @@ describe('TodoApiService', () => {
     const response: ToDo = {
       id: '0f6f808d-b95a-49a7-ae79-916267f73e7f',
       title: 'New task',
+      description: 'New description',
       isCompleted: false,
       createdAt: '2026-02-28T10:00:00Z',
     };
 
-    service.addTodo({ title: 'New task' }).subscribe((todo) => {
+    service.addTodo({ title: 'New task', description: 'New description' }).subscribe((todo) => {
       expect(todo).toEqual(response);
     });
 
     const request = httpTestingController.expectOne('/api/todos');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ title: 'New task' });
+    expect(request.request.body).toEqual({ title: 'New task', description: 'New description' });
     request.flush(response);
   });
 

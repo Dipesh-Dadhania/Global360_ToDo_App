@@ -14,11 +14,12 @@ public class TodoServiceTests
         var repository = new FakeTodoRepository();
         var service = new TodoService(repository);
 
-        var request = new CreateTodoRequest { Title = "  Buy milk  " };
+        var request = new CreateTodoRequest { Title = "  Buy milk  ", Description = "  Daily essentials  " };
 
         var result = await service.CreateAsync(request);
 
         Assert.Equal("Buy milk", result.Title);
+        Assert.Equal("Daily essentials", result.Description);
         Assert.Equal(repository.AddedItems.Single().Id, result.Id);
         Assert.Equal(repository.AddedItems.Single().CreatedAt, result.CreatedAt);
         Assert.False(result.IsCompleted);
@@ -44,6 +45,7 @@ public class TodoServiceTests
         {
             Id = Guid.NewGuid(),
             Title = "Read book",
+            Description = "Read 20 pages",
             IsCompleted = true,
             CreatedAt = DateTime.UtcNow.AddHours(-2)
         };
@@ -56,6 +58,7 @@ public class TodoServiceTests
         Assert.NotNull(result);
         Assert.Equal(existing.Id, result!.Id);
         Assert.Equal(existing.Title, result.Title);
+        Assert.Equal(existing.Description, result.Description);
         Assert.Equal(existing.IsCompleted, result.IsCompleted);
         Assert.Equal(existing.CreatedAt, result.CreatedAt);
     }
@@ -116,18 +119,25 @@ public class TodoServiceTests
             {
                 Id = id,
                 Title = "New title",
+                Description = "New description",
                 IsCompleted = false,
                 CreatedAt = DateTime.UtcNow.AddMinutes(-1)
             }
         };
         var service = new TodoService(repository);
 
-        var result = await service.UpdateAsync(id, new UpdateTodoRequest { Title = "  New title  " });
+        var result = await service.UpdateAsync(id, new UpdateTodoRequest
+        {
+            Title = "  New title  ",
+            Description = "  New description  "
+        });
 
         Assert.NotNull(result);
         Assert.Equal("New title", result!.Title);
+        Assert.Equal("New description", result.Description);
         Assert.Equal(id, repository.LastUpdatedId);
         Assert.Equal("New title", repository.LastUpdatedTitle);
+        Assert.Equal("New description", repository.LastUpdatedDescription);
     }
 
     [Fact]
@@ -136,7 +146,7 @@ public class TodoServiceTests
         var id = Guid.NewGuid();
         var service = new TodoService(new FakeTodoRepository { UpdatedTitleItem = null });
 
-        var result = await service.UpdateAsync(id, new UpdateTodoRequest { Title = "Changed" });
+        var result = await service.UpdateAsync(id, new UpdateTodoRequest { Title = "Changed", Description = "Desc" });
 
         Assert.Null(result);
     }
@@ -148,7 +158,7 @@ public class TodoServiceTests
     {
         var service = new TodoService(new FakeTodoRepository());
 
-        var action = () => service.UpdateAsync(Guid.NewGuid(), new UpdateTodoRequest { Title = title });
+        var action = () => service.UpdateAsync(Guid.NewGuid(), new UpdateTodoRequest { Title = title, Description = "Desc" });
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(action);
         Assert.Equal("request", exception.ParamName);
@@ -233,6 +243,7 @@ public class TodoServiceTests
         public TodoItem? UpdatedTitleItem { get; set; }
         public Guid LastUpdatedId { get; private set; }
         public string LastUpdatedTitle { get; private set; } = string.Empty;
+        public string LastUpdatedDescription { get; private set; } = string.Empty;
 
         public Task<List<TodoItem>> GetAllAsync(CancellationToken cancellationToken = default)
         {
@@ -255,10 +266,11 @@ public class TodoServiceTests
         public Task<TodoItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(ItemById);
 
-        public Task<TodoItem?> UpdateTitleAsync(Guid id, string title, CancellationToken cancellationToken = default)
+        public Task<TodoItem?> UpdateAsync(Guid id, string title, string description, CancellationToken cancellationToken = default)
         {
             LastUpdatedId = id;
             LastUpdatedTitle = title;
+            LastUpdatedDescription = description;
             return Task.FromResult(UpdatedTitleItem);
         }
 

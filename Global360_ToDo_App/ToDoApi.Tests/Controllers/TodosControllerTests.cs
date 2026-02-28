@@ -21,7 +21,7 @@ public class TodosControllerTests
     [Fact]
     public async Task GetAll_ReturnsOkWithList()
     {
-        var list = new List<TodoResponse> { new() { Id = Guid.NewGuid(), Title = "A", CreatedAt = DateTime.UtcNow } };
+        var list = new List<TodoResponse> { new() { Id = Guid.NewGuid(), Title = "A", Description = "Desc A", CreatedAt = DateTime.UtcNow } };
         _serviceMock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(list);
 
         var result = await _controller.GetAll(CancellationToken.None);
@@ -34,7 +34,7 @@ public class TodosControllerTests
     [Fact]
     public async Task GetById_WhenExists_ReturnsOk()
     {
-        var response = new TodoResponse { Id = Guid.NewGuid(), Title = "Item", CreatedAt = DateTime.UtcNow };
+        var response = new TodoResponse { Id = Guid.NewGuid(), Title = "Item", Description = "Item description", CreatedAt = DateTime.UtcNow };
         _serviceMock.Setup(s => s.GetByIdAsync(response.Id, It.IsAny<CancellationToken>())).ReturnsAsync(response);
 
         var result = await _controller.GetById(response.Id, CancellationToken.None);
@@ -43,6 +43,7 @@ public class TodosControllerTests
         var value = Assert.IsType<TodoResponse>(ok.Value);
         Assert.Equal(response.Id, value.Id);
         Assert.Equal(response.Title, value.Title);
+        Assert.Equal(response.Description, value.Description);
     }
 
     [Fact]
@@ -59,8 +60,8 @@ public class TodosControllerTests
     [Fact]
     public async Task Create_ReturnsCreatedWithLocation()
     {
-        var request = new CreateTodoRequest { Title = "New" };
-        var created = new TodoResponse { Id = Guid.NewGuid(), Title = "New", CreatedAt = DateTime.UtcNow };
+        var request = new CreateTodoRequest { Title = "New", Description = "New description" };
+        var created = new TodoResponse { Id = Guid.NewGuid(), Title = "New", Description = "New description", CreatedAt = DateTime.UtcNow };
         _serviceMock.Setup(s => s.CreateAsync(request, It.IsAny<CancellationToken>())).ReturnsAsync(created);
 
         var result = await _controller.Create(request, CancellationToken.None);
@@ -71,17 +72,19 @@ public class TodosControllerTests
         var value = Assert.IsType<TodoResponse>(createdResult.Value);
         Assert.Equal(created.Id, value.Id);
         Assert.Equal(created.Title, value.Title);
+        Assert.Equal(created.Description, value.Description);
     }
 
     [Fact]
     public async Task Update_WhenExists_ReturnsOk()
     {
         var id = Guid.NewGuid();
-        var request = new UpdateTodoRequest { Title = "Updated title" };
+        var request = new UpdateTodoRequest { Title = "Updated title", Description = "Updated description" };
         var updated = new TodoResponse
         {
             Id = id,
             Title = "Updated title",
+            Description = "Updated description",
             IsCompleted = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -94,13 +97,14 @@ public class TodosControllerTests
         var value = Assert.IsType<TodoResponse>(ok.Value);
         Assert.Equal(updated.Id, value.Id);
         Assert.Equal(updated.Title, value.Title);
+        Assert.Equal(updated.Description, value.Description);
     }
 
     [Fact]
     public async Task Update_WhenNotExists_ReturnsNotFound()
     {
         var id = Guid.NewGuid();
-        var request = new UpdateTodoRequest { Title = "Updated title" };
+        var request = new UpdateTodoRequest { Title = "Updated title", Description = "Updated description" };
 
         _serviceMock.Setup(s => s.UpdateAsync(id, request, It.IsAny<CancellationToken>())).ReturnsAsync((TodoResponse?)null);
 

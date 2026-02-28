@@ -12,6 +12,7 @@ class TodoApiServiceMock {
       {
         id: '1',
         title: 'First',
+        description: 'First description',
         isCompleted: false,
         createdAt: '2026-02-28T10:00:00Z',
       },
@@ -22,6 +23,7 @@ class TodoApiServiceMock {
     return of<ToDo>({
       id: '2',
       title: request.title,
+      description: request.description,
       isCompleted: false,
       createdAt: '2026-02-28T11:00:00Z',
     });
@@ -57,6 +59,7 @@ describe('TodoPageComponent', () => {
 
   it('adds a todo item', () => {
     component.titleControl.setValue('Second');
+    component.descriptionControl.setValue('Second description');
     fixture.debugElement.query(By.css('form')).triggerEventHandler('ngSubmit');
     fixture.detectChanges();
 
