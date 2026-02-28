@@ -18,6 +18,17 @@
   }
 }
 
+.todo-search {
+  margin-bottom: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  input:disabled {
+    cursor: not-allowed;
+  }
+}
+
 input {
   flex: 1;
   min-width: 0;

@@ -8,7 +8,7 @@
         id="title"
         type="text"
         [formControl]="titleControl"
-        placeholder="Enter a To Do item..."
+        placeholder="Enter a To-Do item..."
         maxlength="200"
       />
       <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Adding...' : 'Add' }}</button>
@@ -17,6 +17,21 @@
       <p class="validation">Title is required.</p>
     }
   </form>
+
+  <div class="todo-search">
+    <input
+      id="search"
+      type="text"
+      [value]="searchText()"
+      [disabled]="!hasTodos()"
+      (input)="onSearchInput($event)"
+      placeholder="Search To-Do item..."
+      maxlength="200"
+    />
+    @if (hasSearchQuery()) {
+      <button type="button" (click)="clearSearch()">×</button>
+    }
+  </div>
 
   @if (errorMessage()) {
     <p class="error">{{ errorMessage() }}</p>
@@ -30,7 +45,7 @@
     <p>Loading todos...</p>
   } @else {
     <ul class="todo-list">
-      @for (todo of todos(); track trackById($index, todo)) {
+      @for (todo of filteredTodos(); track trackById($index, todo)) {
         <li>
           <div class="todo-main">
             <label class="todo-checkbox" aria-label="Toggle completed state">
@@ -97,7 +112,9 @@
           </div>
         </li>
       } @empty {
-        <li class="empty-state">No todo items yet.</li>
+        <li class="empty-state">
+          {{ hasSearchQuery() ? 'No matching To-Do items found.' : 'No To-Do items yet.' }}
+        </li>
       }
     </ul>
   }

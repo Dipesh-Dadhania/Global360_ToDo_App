@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -29,6 +29,17 @@ export class TodoPageComponent {
   });
 
   readonly todos = signal<Todo[]>([]);
+  readonly searchText = signal('');
+  readonly hasTodos = computed(() => this.todos().length > 0);
+  readonly hasSearchQuery = computed(() => this.searchText().trim().length > 0);
+  readonly filteredTodos = computed(() => {
+    const search = this.searchText().trim().toLowerCase();
+    if (!search) {
+      return this.todos();
+    }
+
+    return this.todos().filter((todo) => todo.title.toLowerCase().startsWith(search));
+  });
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly deletingTodoIds = signal<Set<string>>(new Set());
@@ -107,7 +118,14 @@ export class TodoPageComponent {
       )
       .subscribe({
         next: () => {
-          this.todos.update((currentTodos) => currentTodos.filter((todo) => todo.id !== id));
+          this.todos.update((currentTodos) => {
+            const nextTodos = currentTodos.filter((todo) => todo.id !== id);
+            if (nextTodos.length === 0) {
+              this.clearSearch();
+            }
+
+            return nextTodos;
+          });
           this.showSuccess('To Do item successfully deleted.');
         },
         error: () => {
@@ -244,6 +262,14 @@ export class TodoPageComponent {
     return todo.id;
   }
 
+  onSearchInput(event: Event): void {
+    this.searchText.set((event.target as HTMLInputElement).value);
+  }
+
+  clearSearch(): void {
+    this.searchText.set('');
+  }
+
   private loadTodos(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -257,6 +283,9 @@ export class TodoPageComponent {
       .subscribe({
         next: (todos) => {
           this.todos.set(this.sortTodos(todos));
+          if (todos.length === 0) {
+            this.clearSearch();
+          }
         },
         error: () => {
           this.errorMessage.set('Unable to load todo items. Please ensure the API is running.');
