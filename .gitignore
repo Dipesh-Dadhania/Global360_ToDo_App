@@ -1,0 +1,35 @@
+# Build output
+**/bin/
+**/obj/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# Test results and coverage
+TestResults/
+**/TestResults/
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+
+# Logs
+*.log
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Runtime files
+*.pid
+*.seed
+
+# OS files
+.DS_Store
+Thumbs.db
