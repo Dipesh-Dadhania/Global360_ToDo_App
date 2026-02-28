@@ -1,8 +1,10 @@
 <main class="todo-page">
-  <h1>To Do List</h1>
+  <header class="todo-header">
+    <h1>To-Do List</h1>
+    <p class="todo-subtitle">Stay organized and keep your tasks in check.</p>
+  </header>
 
-  <form class="todo-form" [formGroup]="todoForm" (ngSubmit)="addTodo()">
-    <!-- <label for="title">New To Do</label> -->
+  <form class="todo-form card" [formGroup]="todoForm" (ngSubmit)="addTodo()">
     <div class="todo-form__controls">
       <input
         id="title"
@@ -11,14 +13,14 @@
         placeholder="Enter a To-Do item..."
         maxlength="200"
       />
-      <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Adding...' : 'Add' }}</button>
+      <button class="btn btn-primary" type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Adding...' : 'Add' }}</button>
     </div>
     @if (titleControl.invalid && (hasSubmitted() || titleControl.dirty)) {
       <p class="validation">Title is required.</p>
     }
   </form>
 
-  <div class="todo-search">
+  <div class="todo-search card">
     <input
       id="search"
       type="text"
@@ -29,7 +31,7 @@
       maxlength="200"
     />
     @if (hasSearchQuery()) {
-      <button type="button" (click)="clearSearch()">×</button>
+      <button class="btn btn-ghost" type="button" (click)="clearSearch()" aria-label="Clear search">×</button>
     }
   </div>
 
@@ -43,8 +45,14 @@
 
   @if (isLoading()) {
     <p>Loading todos...</p>
+  } @else if (!hasTodos()) {
+    <section class="empty-thinking card" aria-live="polite">
+      <mat-icon class="empty-thinking__icon">emoji_objects</mat-icon>
+      <h2>Nothing here yet</h2>
+      <p>Start by adding a To-Do title.</p>
+    </section>
   } @else {
-    <ul class="todo-list">
+    <ul class="todo-list card">
       @for (todo of filteredTodos(); track trackById($index, todo)) {
         <li>
           <div class="todo-main">
@@ -73,41 +81,61 @@
                   {{ todo.title }}
                 </span>
               }
-              <small class="todo-created">Created: {{ todo.createdAt | date: 'dd MMM yyyy, hh:mm a' }}</small>
+              <small class="todo-created">{{ todo.createdAt | date: 'dd MMM yyyy, hh:mm a' }}</small>
             </div>
           </div>
 
           <div class="todo-actions">
             @if (isEditing(todo.id)) {
               <button
+                class="btn btn-success"
                 type="button"
                 (click)="saveEditedTodo(todo.id)"
                 [disabled]="isUpdatingTitle()"
+                aria-label="Save To-Do"
+                title="Save"
               >
-                {{ isUpdatingTitle() ? 'Saving...' : 'Save' }}
+                @if (isUpdatingTitle()) {
+                  <mat-icon>hourglass_top</mat-icon>
+                } @else {
+                  <mat-icon>check</mat-icon>
+                }
               </button>
               <button
+                class="btn btn-ghost"
                 type="button"
                 (click)="cancelEditing()"
                 [disabled]="isUpdatingTitle()"
+                aria-label="Cancel edit"
+                title="Cancel"
               >
-                Cancel
+                <mat-icon>cancel</mat-icon>
               </button>
             } @else {
               <button
+                class="btn btn-ghost"
                 type="button"
                 (click)="startEditing(todo)"
                 [disabled]="isUpdatingTitle()"
+                aria-label="Edit To-Do"
+                title="Edit"
               >
-                Edit
+                <mat-icon>edit</mat-icon>
               </button>
             }
             <button
+              class="btn btn-danger"
               type="button"
               (click)="deleteTodo($event, todo.id)"
               [disabled]="deletingTodoIds().has(todo.id) || isUpdatingTitle()"
+              aria-label="Delete To-Do"
+              title="Delete"
             >
-              {{ deletingTodoIds().has(todo.id) ? 'Deleting...' : 'Delete' }}
+              @if (deletingTodoIds().has(todo.id)) {
+                <mat-icon>hourglass_top</mat-icon>
+              } @else {
+                <mat-icon>delete_outline</mat-icon>
+              }
             </button>
           </div>
         </li>
