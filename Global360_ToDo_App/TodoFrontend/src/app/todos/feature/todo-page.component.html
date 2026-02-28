@@ -60,7 +60,7 @@
     </section>
   } @else {
     <ul class="todo-list card">
-      @for (todo of filteredTodos(); track trackById($index, todo)) {
+      @for (todo of pagedUncheckedTodos(); track trackById($index, todo)) {
         <li>
           <div class="todo-main">
             <button
@@ -178,9 +178,178 @@
         </li>
       } @empty {
         <li class="empty-state">
-          {{ hasSearchQuery() ? 'No matching To-Do items found.' : 'No To-Do items yet.' }}
+          {{ hasSearchQuery() ? 'No matching active To-Do items found.' : 'No active To-Do items.' }}
         </li>
       }
     </ul>
+
+    @if (showActivePagination()) {
+      <div class="todo-pagination">
+        <button
+          class="btn btn-ghost"
+          type="button"
+          (click)="goToPreviousActivePage()"
+          [disabled]="activePageNumber() === 1"
+        >
+          Previous
+        </button>
+        <span>Page {{ activePageNumber() }} of {{ activeTotalPages() }}</span>
+        <button
+          class="btn btn-ghost"
+          type="button"
+          (click)="goToNextActivePage()"
+          [disabled]="activePageNumber() === activeTotalPages()"
+        >
+          Next
+        </button>
+      </div>
+    }
+
+    @if (hasCheckedTodos()) {
+      <h2 class="checked-task-title">Checked To-Do Items</h2>
+      <ul class="todo-list card">
+        @for (todo of pagedCheckedTodos(); track trackById($index, todo)) {
+          <li>
+            <div class="todo-main">
+              <button
+                class="todo-checkbox"
+                type="button"
+                (click)="setTodoCompleted(todo.id, !todo.isCompleted)"
+                [disabled]="updatingTodoIds().has(todo.id)"
+                [attr.aria-label]="todo.isCompleted ? 'Mark as incomplete' : 'Mark as complete'"
+              >
+                @if (todo.isCompleted) {
+                  <mat-icon>check_box</mat-icon>
+                } @else {
+                  <mat-icon>check_box_outline_blank</mat-icon>
+                }
+              </button>
+
+              <div class="todo-content">
+                @if (isEditing(todo.id)) {
+                  <input
+                    class="todo-edit-input"
+                    type="text"
+                    [formControl]="editTitleControl"
+                    maxlength="200"
+                  />
+                  <textarea
+                    class="todo-edit-input"
+                    [formControl]="editDescriptionControl"
+                    maxlength="500"
+                    rows="2"
+                  ></textarea>
+                  @if (editTitleControl.invalid && editTitleControl.touched) {
+                    <small class="validation">Title is required.</small>
+                  }
+                } @else {
+                  <div class="todo-title-row">
+                    <span [class.todo-completed]="todo.isCompleted" [innerHTML]="getHighlightedText(todo.title)"></span>
+                    <button
+                      class="btn btn-ghost todo-arrow-btn"
+                      type="button"
+                      (click)="toggleDescription(todo.id)"
+                      [attr.aria-label]="isDescriptionExpanded(todo.id) ? 'Hide description' : 'Show description'"
+                    >
+                      @if (isDescriptionExpanded(todo.id)) {
+                        <mat-icon>expand_less</mat-icon>
+                      } @else {
+                        <mat-icon>expand_more</mat-icon>
+                      }
+                    </button>
+                  </div>
+                  @if (isDescriptionExpanded(todo.id)) {
+                    @if (todo.description) {
+                      <small class="todo-description" [innerHTML]="getHighlightedText(todo.description)"></small>
+                    } @else {
+                      <small class="todo-description todo-description--empty">No description available.</small>
+                    }
+                  }
+                }
+                <small class="todo-created">{{ todo.createdAt | date: 'dd MMM yyyy, hh:mm a' }}</small>
+              </div>
+            </div>
+
+            <div class="todo-actions">
+              @if (isEditing(todo.id)) {
+                <button
+                  class="btn btn-success"
+                  type="button"
+                  (click)="saveEditedTodo(todo.id)"
+                  [disabled]="isUpdatingTitle()"
+                  aria-label="Save To-Do"
+                  title="Save"
+                >
+                  @if (isUpdatingTitle()) {
+                    <mat-icon>hourglass_top</mat-icon>
+                  } @else {
+                    <mat-icon>check</mat-icon>
+                  }
+                </button>
+                <button
+                  class="btn btn-ghost"
+                  type="button"
+                  (click)="cancelEditing()"
+                  [disabled]="isUpdatingTitle()"
+                  aria-label="Cancel edit"
+                  title="Cancel"
+                >
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              } @else {
+                <button
+                  class="btn btn-ghost"
+                  type="button"
+                  (click)="startEditing(todo)"
+                  [disabled]="isUpdatingTitle()"
+                  aria-label="Edit To-Do"
+                  title="Edit"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              <button
+                class="btn btn-danger"
+                type="button"
+                (click)="deleteTodo($event, todo.id)"
+                [disabled]="deletingTodoIds().has(todo.id) || isUpdatingTitle()"
+                aria-label="Delete To-Do"
+                title="Delete"
+              >
+                @if (deletingTodoIds().has(todo.id)) {
+                  <mat-icon>hourglass_top</mat-icon>
+                } @else {
+                  <mat-icon>delete_outline</mat-icon>
+                }
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="empty-state">No matching checked tasks found.</li>
+        }
+      </ul>
+
+      @if (showCheckedPagination()) {
+        <div class="todo-pagination">
+          <button
+            class="btn btn-ghost"
+            type="button"
+            (click)="goToPreviousCheckedPage()"
+            [disabled]="checkedPageNumber() === 1"
+          >
+            Previous
+          </button>
+          <span>Page {{ checkedPageNumber() }} of {{ checkedTotalPages() }}</span>
+          <button
+            class="btn btn-ghost"
+            type="button"
+            (click)="goToNextCheckedPage()"
+            [disabled]="checkedPageNumber() === checkedTotalPages()"
+          >
+            Next
+          </button>
+        </div>
+      }
+    }
   }
 </main>

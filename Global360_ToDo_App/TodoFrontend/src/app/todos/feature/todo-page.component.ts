@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { finalize } from 'rxjs';
@@ -15,10 +15,11 @@ import { ToDo } from '../models/todo';
   styleUrl: './todo-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TodoPageComponent {
+export class TodoPageComponent implements OnInit, OnDestroy {
   private readonly todoApiService = inject(TodoApiService);
   private readonly destroyRef = inject(DestroyRef);
   private successTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  readonly pageSize = 5;
 
   readonly titleControl = new FormControl('', {
     nonNullable: true,
@@ -51,6 +52,27 @@ export class TodoPageComponent {
         .some((word) => word.startsWith(search)),
     );
   });
+  readonly filteredUncheckedTodos = computed(() => this.filteredTodos().filter((todo) => !todo.isCompleted));
+  readonly filteredCheckedTodos = computed(() => this.filteredTodos().filter((todo) => todo.isCompleted));
+  readonly activePage = signal(1);
+  readonly checkedPage = signal(1);
+  readonly activeTotalPages = computed(() => Math.max(1, Math.ceil(this.filteredUncheckedTodos().length / this.pageSize)));
+  readonly checkedTotalPages = computed(() => Math.max(1, Math.ceil(this.filteredCheckedTodos().length / this.pageSize)));
+  readonly activePageNumber = computed(() => Math.min(this.activePage(), this.activeTotalPages()));
+  readonly checkedPageNumber = computed(() => Math.min(this.checkedPage(), this.checkedTotalPages()));
+  readonly pagedUncheckedTodos = computed(() => {
+    const page = this.activePageNumber();
+    const start = (page - 1) * this.pageSize;
+    return this.filteredUncheckedTodos().slice(start, start + this.pageSize);
+  });
+  readonly pagedCheckedTodos = computed(() => {
+    const page = this.checkedPageNumber();
+    const start = (page - 1) * this.pageSize;
+    return this.filteredCheckedTodos().slice(start, start + this.pageSize);
+  });
+  readonly showActivePagination = computed(() => this.filteredUncheckedTodos().length > this.pageSize);
+  readonly showCheckedPagination = computed(() => this.filteredCheckedTodos().length > this.pageSize);
+  readonly hasCheckedTodos = computed(() => this.todos().some((todo) => todo.isCompleted));
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly deletingTodoIds = signal<Set<string>>(new Set());
@@ -70,8 +92,31 @@ export class TodoPageComponent {
   readonly successMessage = signal('');
   readonly hasSubmitted = signal(false);
 
+  constructor() {
+    effect(() => {
+      const totalPages = this.activeTotalPages();
+      if (this.activePage() > totalPages) {
+        this.activePage.set(totalPages);
+      }
+    });
+
+    effect(() => {
+      const totalPages = this.checkedTotalPages();
+      if (this.checkedPage() > totalPages) {
+        this.checkedPage.set(totalPages);
+      }
+    });
+  }
+
   ngOnInit(): void {
     this.loadTodos();
+  }
+
+  ngOnDestroy(): void {
+    if (this.successTimeoutId) {
+      clearTimeout(this.successTimeoutId);
+      this.successTimeoutId = null;
+    }
   }
 
   addTodo(): void {
@@ -303,20 +348,36 @@ export class TodoPageComponent {
     return this.expandedTodoIds().has(id);
   }
 
-  getCheckedState(event: Event): boolean {
-    return (event.target as HTMLInputElement).checked;
-  }
-
   trackById(index: number, todo: ToDo): string {
     return todo.id;
   }
 
   onSearchInput(event: Event): void {
     this.searchText.set((event.target as HTMLInputElement).value);
+    this.activePage.set(1);
+    this.checkedPage.set(1);
   }
 
   clearSearch(): void {
     this.searchText.set('');
+    this.activePage.set(1);
+    this.checkedPage.set(1);
+  }
+
+  goToPreviousActivePage(): void {
+    this.activePage.update((page) => Math.max(1, page - 1));
+  }
+
+  goToNextActivePage(): void {
+    this.activePage.update((page) => Math.min(this.activeTotalPages(), page + 1));
+  }
+
+  goToPreviousCheckedPage(): void {
+    this.checkedPage.update((page) => Math.max(1, page - 1));
+  }
+
+  goToNextCheckedPage(): void {
+    this.checkedPage.update((page) => Math.min(this.checkedTotalPages(), page + 1));
   }
 
   getHighlightedText(value: string): string {
@@ -374,13 +435,7 @@ export class TodoPageComponent {
   }
 
   private sortTodos(todos: ToDo[]): ToDo[] {
-    return [...todos].sort((first, second) => {
-      if (first.isCompleted !== second.isCompleted) {
-        return first.isCompleted ? 1 : -1;
-      }
-
-      return second.createdAt.localeCompare(first.createdAt);
-    });
+    return [...todos].sort((first, second) => second.createdAt.localeCompare(first.createdAt));
   }
 
   private showSuccess(message: string): void {
