@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-
 import { TodoApiService } from '../data-access/todo-api.service';
 import { Todo } from '../models/todo';
 
@@ -32,6 +32,12 @@ export class TodoPageComponent {
   readonly isSaving = signal(false);
   readonly deletingTodoIds = signal<Set<string>>(new Set());
   readonly updatingTodoIds = signal<Set<string>>(new Set());
+  readonly editingTodoId = signal<string | null>(null);
+  readonly isUpdatingTitle = signal(false);
+  readonly editTitleControl = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.required, Validators.maxLength(200)],
+  });
   readonly errorMessage = signal('');
   readonly hasSubmitted = signal(false);
 
@@ -146,6 +152,85 @@ export class TodoPageComponent {
           this.errorMessage.set('Unable to update todo item. Please try again.');
         },
       });
+  }
+
+  startEditing(todo: Todo): void {
+    if (this.isUpdatingTitle()) {
+      return;
+    }
+
+    this.editingTodoId.set(todo.id);
+    this.editTitleControl.setValue(todo.title);
+    this.editTitleControl.markAsPristine();
+    this.editTitleControl.markAsUntouched();
+  }
+
+  cancelEditing(): void {
+    this.editingTodoId.set(null);
+    this.editTitleControl.reset('', { emitEvent: false });
+  }
+
+  saveEditedTodo(id: string): void {
+    if (this.isUpdatingTitle()) {
+      return;
+    }
+
+    const todo = this.todos().find((item) => item.id === id);
+    if (!todo) {
+      this.cancelEditing();
+      return;
+    }
+
+    if (this.editTitleControl.invalid) {
+      this.editTitleControl.markAsTouched();
+      return;
+    }
+
+    const title = this.editTitleControl.value.trim();
+    if (!title) {
+      this.editTitleControl.setErrors({ required: true });
+      this.editTitleControl.markAsTouched();
+      return;
+    }
+
+    if (title === todo.title) {
+      this.cancelEditing();
+      return;
+    }
+
+    this.errorMessage.set('');
+    this.isUpdatingTitle.set(true);
+
+    this.todoApiService
+      .updateTodo(id, { title })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isUpdatingTitle.set(false)),
+      )
+      .subscribe({
+        next: (updatedTodo) => {
+          this.todos.update((currentTodos) =>
+            this.sortTodos(
+              currentTodos.map((currentTodo) =>
+                currentTodo.id === updatedTodo.id ? updatedTodo : currentTodo,
+              ),
+            ),
+          );
+          this.cancelEditing();
+        },
+        error: (error: HttpErrorResponse) => {
+          if (error.status === 404 || error.status === 405) {
+            this.errorMessage.set('Edit endpoint not available. Please restart ToDoApi and try again.');
+            return;
+          }
+
+          this.errorMessage.set('Unable to edit todo item. Please try again.');
+        },
+      });
+  }
+
+  isEditing(todoId: string): boolean {
+    return this.editingTodoId() === todoId;
   }
 
   getCheckedState(event: Event): boolean {

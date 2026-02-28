@@ -39,6 +39,15 @@ public class TodoService : ITodoService
         return MapToResponse(created);
     }
 
+    public async Task<TodoResponse?> UpdateAsync(Guid id, UpdateTodoRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title))
+            throw new ArgumentException("Title cannot be empty.", nameof(request));
+
+        var updated = await _repository.UpdateTitleAsync(id, request.Title.Trim(), cancellationToken);
+        return updated is null ? null : MapToResponse(updated);
+    }
+
     public async Task<TodoResponse?> MarkAsCompletedAsync(Guid id, bool isCompleted, CancellationToken cancellationToken = default)
     {
         var updated = await _repository.MarkAsCompletedAsync(id, isCompleted, cancellationToken);

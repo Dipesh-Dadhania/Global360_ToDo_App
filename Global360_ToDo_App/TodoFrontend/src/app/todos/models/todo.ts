@@ -8,3 +8,7 @@ export interface Todo {
 export interface CreateTodoRequest {
   title: string;
 }
+
+export interface UpdateTodoRequest {
+  title: string;
+}

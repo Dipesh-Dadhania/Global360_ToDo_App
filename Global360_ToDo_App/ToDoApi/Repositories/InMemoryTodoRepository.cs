@@ -24,6 +24,21 @@ public class InMemoryTodoRepository : ITodoRepository
         }
     }
 
+    public Task<TodoItem?> UpdateTitleAsync(Guid id, string title, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_lock)
+        {
+            var item = _todos.FirstOrDefault(x => x.Id == id);
+            if (item is null)
+                return Task.FromResult<TodoItem?>(null);
+
+            item.Title = title;
+
+            return Task.FromResult<TodoItem?>(item);
+        }
+    }
+
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

@@ -1,14 +1,14 @@
 <main class="todo-page">
-  <h1>Todo List</h1>
+  <h1>To Do List</h1>
 
   <form class="todo-form" [formGroup]="todoForm" (ngSubmit)="addTodo()">
-    <label for="title">New todo</label>
+    <!-- <label for="title">New To Do</label> -->
     <div class="todo-form__controls">
       <input
         id="title"
         type="text"
         [formControl]="titleControl"
-        placeholder="Enter a task"
+        placeholder="Enter a To Do item..."
         maxlength="200"
       />
       <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Adding...' : 'Add' }}</button>
@@ -39,18 +39,54 @@
             </label>
 
             <div class="todo-content">
-              <span [class.todo-completed]="todo.isCompleted">
-                {{ todo.title }}
-              </span>
+              @if (isEditing(todo.id)) {
+                <input
+                  class="todo-edit-input"
+                  type="text"
+                  [formControl]="editTitleControl"
+                  maxlength="200"
+                />
+                @if (editTitleControl.invalid && editTitleControl.touched) {
+                  <small class="validation">Title is required.</small>
+                }
+              } @else {
+                <span [class.todo-completed]="todo.isCompleted">
+                  {{ todo.title }}
+                </span>
+              }
               <small class="todo-created">Created: {{ todo.createdAt | date: 'dd MMM yyyy, hh:mm a' }}</small>
             </div>
           </div>
 
           <div class="todo-actions">
+            @if (isEditing(todo.id)) {
+              <button
+                type="button"
+                (click)="saveEditedTodo(todo.id)"
+                [disabled]="isUpdatingTitle()"
+              >
+                {{ isUpdatingTitle() ? 'Saving...' : 'Save' }}
+              </button>
+              <button
+                type="button"
+                (click)="cancelEditing()"
+                [disabled]="isUpdatingTitle()"
+              >
+                Cancel
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="startEditing(todo)"
+                [disabled]="isUpdatingTitle()"
+              >
+                Edit
+              </button>
+            }
             <button
               type="button"
               (click)="deleteTodo($event, todo.id)"
-              [disabled]="deletingTodoIds().has(todo.id)"
+              [disabled]="deletingTodoIds().has(todo.id) || isUpdatingTitle()"
             >
               {{ deletingTodoIds().has(todo.id) ? 'Deleting...' : 'Delete' }}
             </button>

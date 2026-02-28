@@ -47,6 +47,20 @@ public class TodosController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
+    /// <summary>Updates an existing todo item title.</summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(TodoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTodoRequest request, CancellationToken cancellationToken)
+    {
+        var updated = await _service.UpdateAsync(id, request, cancellationToken);
+        if (updated is null)
+            return NotFound();
+
+        return Ok(updated);
+    }
+
     /// <summary>Marks a todo item as completed.</summary>
     [HttpPut("{id:guid}/mark-as-completed")]
     [ProducesResponseType(typeof(TodoResponse), StatusCodes.Status200OK)]
