@@ -17,6 +17,7 @@ import { Todo } from '../models/todo';
 export class TodoPageComponent {
   private readonly todoApiService = inject(TodoApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private successTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   readonly titleControl = new FormControl('', {
     nonNullable: true,
@@ -39,6 +40,7 @@ export class TodoPageComponent {
     validators: [Validators.required, Validators.maxLength(200)],
   });
   readonly errorMessage = signal('');
+  readonly successMessage = signal('');
   readonly hasSubmitted = signal(false);
 
   ngOnInit(): void {
@@ -106,6 +108,7 @@ export class TodoPageComponent {
       .subscribe({
         next: () => {
           this.todos.update((currentTodos) => currentTodos.filter((todo) => todo.id !== id));
+          this.showSuccess('To Do item successfully deleted.');
         },
         error: () => {
           this.errorMessage.set('Unable to delete todo item. Please try again.');
@@ -269,5 +272,17 @@ export class TodoPageComponent {
 
       return second.createdAt.localeCompare(first.createdAt);
     });
+  }
+
+  private showSuccess(message: string): void {
+    if (this.successTimeoutId) {
+      clearTimeout(this.successTimeoutId);
+    }
+
+    this.successMessage.set(message);
+    this.successTimeoutId = setTimeout(() => {
+      this.successMessage.set('');
+      this.successTimeoutId = null;
+    }, 3000);
   }
 }

@@ -22,6 +22,10 @@
     <p class="error">{{ errorMessage() }}</p>
   }
 
+  @if (successMessage()) {
+    <p class="success-toast">{{ successMessage() }}</p>
+  }
+
   @if (isLoading()) {
     <p>Loading todos...</p>
   } @else {
