@@ -39,6 +39,12 @@ public class TodoService : ITodoService
         return MapToResponse(created);
     }
 
+    public async Task<TodoResponse?> MarkAsCompletedAsync(Guid id, bool isCompleted, CancellationToken cancellationToken = default)
+    {
+        var updated = await _repository.MarkAsCompletedAsync(id, isCompleted, cancellationToken);
+        return updated is null ? null : MapToResponse(updated);
+    }
+
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _repository.DeleteAsync(id, cancellationToken);

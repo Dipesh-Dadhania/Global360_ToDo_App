@@ -28,14 +28,33 @@
     <ul class="todo-list">
       @for (todo of todos(); track trackById($index, todo)) {
         <li>
-          <span>{{ todo.title }}</span>
-          <button
-            type="button"
-            (click)="deleteTodo($event, todo.id)"
-            [disabled]="deletingTodoIds().has(todo.id)"
-          >
-            {{ deletingTodoIds().has(todo.id) ? 'Deleting...' : 'Delete' }}
-          </button>
+          <div class="todo-main">
+            <label class="todo-checkbox" aria-label="Toggle completed state">
+              <input
+                type="checkbox"
+                [checked]="todo.isCompleted"
+                (change)="setTodoCompleted(todo.id, getCheckedState($event))"
+                [disabled]="updatingTodoIds().has(todo.id)"
+              />
+            </label>
+
+            <div class="todo-content">
+              <span [class.todo-completed]="todo.isCompleted">
+                {{ todo.title }}
+              </span>
+              <small class="todo-created">Created: {{ todo.createdAt | date: 'dd MMM yyyy, hh:mm a' }}</small>
+            </div>
+          </div>
+
+          <div class="todo-actions">
+            <button
+              type="button"
+              (click)="deleteTodo($event, todo.id)"
+              [disabled]="deletingTodoIds().has(todo.id)"
+            >
+              {{ deletingTodoIds().has(todo.id) ? 'Deleting...' : 'Delete' }}
+            </button>
+          </div>
         </li>
       } @empty {
         <li class="empty-state">No todo items yet.</li>

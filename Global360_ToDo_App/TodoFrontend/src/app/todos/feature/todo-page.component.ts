@@ -31,6 +31,7 @@ export class TodoPageComponent {
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly deletingTodoIds = signal<Set<string>>(new Set());
+  readonly updatingTodoIds = signal<Set<string>>(new Set());
   readonly errorMessage = signal('');
   readonly hasSubmitted = signal(false);
 
@@ -63,7 +64,7 @@ export class TodoPageComponent {
       )
       .subscribe({
         next: (createdTodo) => {
-          this.todos.update((currentTodos) => [createdTodo, ...currentTodos]);
+          this.todos.update((currentTodos) => this.sortTodos([createdTodo, ...currentTodos]));
           this.todoForm.reset({ title: '' });
           this.hasSubmitted.set(false);
         },
@@ -106,6 +107,51 @@ export class TodoPageComponent {
       });
   }
 
+  setTodoCompleted(id: string, isCompleted: boolean): void {
+    if (this.updatingTodoIds().has(id)) {
+      return;
+    }
+
+    const todo = this.todos().find((item) => item.id === id);
+    if (!todo || todo.isCompleted === isCompleted) {
+      return;
+    }
+
+    this.errorMessage.set('');
+    this.updatingTodoIds.update((currentSet) => new Set(currentSet).add(id));
+
+    this.todoApiService
+      .markAsCompleted(id, isCompleted)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.updatingTodoIds.update((currentSet) => {
+            const nextSet = new Set(currentSet);
+            nextSet.delete(id);
+            return nextSet;
+          });
+        }),
+      )
+      .subscribe({
+        next: (updatedTodo) => {
+          this.todos.update((currentTodos) =>
+            this.sortTodos(
+              currentTodos.map((currentTodo) =>
+                currentTodo.id === updatedTodo.id ? updatedTodo : currentTodo,
+              ),
+            ),
+          );
+        },
+        error: () => {
+          this.errorMessage.set('Unable to update todo item. Please try again.');
+        },
+      });
+  }
+
+  getCheckedState(event: Event): boolean {
+    return (event.target as HTMLInputElement).checked;
+  }
+
   trackById(index: number, todo: Todo): string {
     return todo.id;
   }
@@ -122,14 +168,21 @@ export class TodoPageComponent {
       )
       .subscribe({
         next: (todos) => {
-          const sortedTodos = [...todos].sort((first, second) =>
-            second.createdAt.localeCompare(first.createdAt),
-          );
-          this.todos.set(sortedTodos);
+          this.todos.set(this.sortTodos(todos));
         },
         error: () => {
           this.errorMessage.set('Unable to load todo items. Please ensure the API is running.');
         },
       });
+  }
+
+  private sortTodos(todos: Todo[]): Todo[] {
+    return [...todos].sort((first, second) => {
+      if (first.isCompleted !== second.isCompleted) {
+        return first.isCompleted ? 1 : -1;
+      }
+
+      return second.createdAt.localeCompare(first.createdAt);
+    });
   }
 }

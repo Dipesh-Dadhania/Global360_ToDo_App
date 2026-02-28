@@ -60,4 +60,17 @@ public class InMemoryTodoRepositoryTests
         var deleted = await _repository.DeleteAsync(Guid.NewGuid());
         Assert.False(deleted);
     }
+
+    [Fact]
+    public async Task MarkAsCompletedAsync_WhenExists_UpdatesCompletionOnly()
+    {
+        var item = new TodoItem { Title = "Old", Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, IsCompleted = false };
+        await _repository.AddAsync(item);
+
+        var updated = await _repository.MarkAsCompletedAsync(item.Id, true);
+
+        Assert.NotNull(updated);
+        Assert.Equal("Old", updated!.Title);
+        Assert.True(updated.IsCompleted);
+    }
 }

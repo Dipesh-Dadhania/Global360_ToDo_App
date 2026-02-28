@@ -22,6 +22,10 @@ coverage.*
 # Logs
 *.log
 
+# Node dependencies
+node_modules/
+**/node_modules/
+
 # NuGet
 *.nupkg
 *.snupkg

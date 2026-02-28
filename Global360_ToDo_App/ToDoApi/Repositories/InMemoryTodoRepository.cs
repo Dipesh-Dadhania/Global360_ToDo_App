@@ -43,4 +43,19 @@ public class InMemoryTodoRepository : ITodoRepository
         lock (_lock)
             return Task.FromResult(_todos.FirstOrDefault(x => x.Id == id));
     }
+
+    public Task<TodoItem?> MarkAsCompletedAsync(Guid id, bool isCompleted, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        lock (_lock)
+        {
+            var item = _todos.FirstOrDefault(x => x.Id == id);
+            if (item is null)
+                return Task.FromResult<TodoItem?>(null);
+
+            item.IsCompleted = isCompleted;
+
+            return Task.FromResult<TodoItem?>(item);
+        }
+    }
 }

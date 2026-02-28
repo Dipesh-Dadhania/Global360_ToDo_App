@@ -47,6 +47,19 @@ public class TodosController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
+    /// <summary>Marks a todo item as completed.</summary>
+    [HttpPut("{id:guid}/mark-as-completed")]
+    [ProducesResponseType(typeof(TodoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkAsCompleted(Guid id, [FromQuery] bool isCompleted = true, CancellationToken cancellationToken = default)
+    {
+        var updated = await _service.MarkAsCompletedAsync(id, isCompleted, cancellationToken);
+        if (updated is null)
+            return NotFound();
+
+        return Ok(updated);
+    }
+
     /// <summary>Deletes a todo item.</summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

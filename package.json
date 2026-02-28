@@ -1,0 +1,11 @@
+{
+  "name": "global360-todo-app",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "todoapp": "concurrently -n backend,frontend -c green,cyan \"dotnet run --project Global360_ToDo_App/ToDoApi\" \"npm --prefix Global360_ToDo_App/TodoFrontend start\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

@@ -74,6 +74,38 @@ public class TodosControllerTests
     }
 
     [Fact]
+    public async Task MarkAsCompleted_WhenExists_ReturnsOk()
+    {
+        var id = Guid.NewGuid();
+        var updated = new TodoResponse
+        {
+            Id = id,
+            Title = "Updated",
+            IsCompleted = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        _serviceMock.Setup(s => s.MarkAsCompletedAsync(id, true, It.IsAny<CancellationToken>())).ReturnsAsync(updated);
+
+        var result = await _controller.MarkAsCompleted(id, true, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var value = Assert.IsType<TodoResponse>(ok.Value);
+        Assert.Equal(updated.Id, value.Id);
+        Assert.True(value.IsCompleted);
+    }
+
+    [Fact]
+    public async Task MarkAsCompleted_WhenNotExists_ReturnsNotFound()
+    {
+        var id = Guid.NewGuid();
+        _serviceMock.Setup(s => s.MarkAsCompletedAsync(id, true, It.IsAny<CancellationToken>())).ReturnsAsync((TodoResponse?)null);
+
+        var result = await _controller.MarkAsCompleted(id, true, CancellationToken.None);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
     public async Task Delete_WhenExists_ReturnsNoContent()
     {
         var id = Guid.NewGuid();

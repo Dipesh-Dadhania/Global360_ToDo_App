@@ -106,6 +106,71 @@ public class TodoServiceTests
         Assert.Equal(token, repository.LastGetAllCancellationToken);
     }
 
+    [Fact]
+    public async Task MarkAsCompletedAsync_WhenExists_ReturnsMappedUpdatedResponse()
+    {
+        var id = Guid.NewGuid();
+        var existing = new TodoItem
+        {
+            Id = id,
+            Title = "Updated title",
+            IsCompleted = false,
+            CreatedAt = DateTime.UtcNow.AddMinutes(-2)
+        };
+        var repository = new FakeTodoRepository
+        {
+            UpdatedItem = new TodoItem
+            {
+                Id = id,
+                Title = "Updated title",
+                IsCompleted = true,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-1)
+            }
+        };
+        var service = new TodoService(repository);
+
+        var result = await service.MarkAsCompletedAsync(id, true);
+
+        Assert.NotNull(result);
+        Assert.Equal("Updated title", result!.Title);
+        Assert.True(result.IsCompleted);
+        Assert.Equal(id, repository.LastMarkedAsCompletedId);
+    }
+
+    [Fact]
+    public async Task MarkAsCompletedAsync_WhenNotExists_ReturnsNull()
+    {
+        var id = Guid.NewGuid();
+        var service = new TodoService(new FakeTodoRepository { UpdatedItem = null });
+
+        var result = await service.MarkAsCompletedAsync(id, true);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task MarkAsCompletedAsync_DoesNotChangeExistingTitle()
+    {
+        var id = Guid.NewGuid();
+        var repository = new FakeTodoRepository
+        {
+            UpdatedItem = new TodoItem
+            {
+                Id = id,
+                Title = "Original title",
+                IsCompleted = true,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-2)
+            }
+        };
+        var service = new TodoService(repository);
+
+        var result = await service.MarkAsCompletedAsync(id, true);
+
+        Assert.NotNull(result);
+        Assert.Equal("Original title", result!.Title);
+        Assert.True(result.IsCompleted);
+    }
+
     private sealed class FakeTodoRepository : ITodoRepository
     {
         public List<TodoItem> AllItems { get; set; } = new();
@@ -114,6 +179,9 @@ public class TodoServiceTests
         public Guid LastDeletedId { get; private set; }
         public CancellationToken LastGetAllCancellationToken { get; private set; }
         public List<TodoItem> AddedItems { get; } = new();
+        public TodoItem? UpdatedItem { get; set; }
+        public Guid LastMarkedAsCompletedId { get; private set; }
+        public bool LastMarkedAsCompletedValue { get; private set; }
 
         public Task<List<TodoItem>> GetAllAsync(CancellationToken cancellationToken = default)
         {
@@ -135,5 +203,12 @@ public class TodoServiceTests
 
         public Task<TodoItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(ItemById);
+
+        public Task<TodoItem?> MarkAsCompletedAsync(Guid id, bool isCompleted, CancellationToken cancellationToken = default)
+        {
+            LastMarkedAsCompletedId = id;
+            LastMarkedAsCompletedValue = isCompleted;
+            return Task.FromResult(UpdatedItem);
+        }
     }
 }

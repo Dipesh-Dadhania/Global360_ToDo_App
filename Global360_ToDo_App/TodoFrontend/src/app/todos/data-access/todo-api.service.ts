@@ -20,6 +20,10 @@ export class TodoApiService {
     return this.http.post<Todo>(this.baseUrl, request);
   }
 
+  markAsCompleted(id: string, isCompleted: boolean): Observable<Todo> {
+    return this.http.put<Todo>(`${this.baseUrl}/${id}/mark-as-completed?isCompleted=${isCompleted}`, {});
+  }
+
   deleteTodo(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }

@@ -8,4 +8,5 @@ public interface ITodoRepository
     Task<TodoItem> AddAsync(TodoItem item, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TodoItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<TodoItem?> MarkAsCompletedAsync(Guid id, bool isCompleted, CancellationToken cancellationToken = default);
 }
