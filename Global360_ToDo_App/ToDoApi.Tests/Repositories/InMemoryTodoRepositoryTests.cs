@@ -62,6 +62,33 @@ public class InMemoryTodoRepositoryTests
     }
 
     [Fact]
+    public async Task UpdateTitleAsync_WhenExists_UpdatesTitleOnly()
+    {
+        var item = new TodoItem
+        {
+            Title = "Old title",
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            IsCompleted = true
+        };
+        await _repository.AddAsync(item);
+
+        var updated = await _repository.UpdateTitleAsync(item.Id, "New title");
+
+        Assert.NotNull(updated);
+        Assert.Equal("New title", updated!.Title);
+        Assert.True(updated.IsCompleted);
+    }
+
+    [Fact]
+    public async Task UpdateTitleAsync_WhenNotExists_ReturnsNull()
+    {
+        var updated = await _repository.UpdateTitleAsync(Guid.NewGuid(), "Any title");
+
+        Assert.Null(updated);
+    }
+
+    [Fact]
     public async Task MarkAsCompletedAsync_WhenExists_UpdatesCompletionOnly()
     {
         var item = new TodoItem { Title = "Old", Id = Guid.NewGuid(), CreatedAt = DateTime.UtcNow, IsCompleted = false };

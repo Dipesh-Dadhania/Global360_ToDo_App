@@ -107,6 +107,54 @@ public class TodoServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_WhenExists_UpdatesTitleAndReturnsMappedResponse()
+    {
+        var id = Guid.NewGuid();
+        var repository = new FakeTodoRepository
+        {
+            UpdatedTitleItem = new TodoItem
+            {
+                Id = id,
+                Title = "New title",
+                IsCompleted = false,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-1)
+            }
+        };
+        var service = new TodoService(repository);
+
+        var result = await service.UpdateAsync(id, new UpdateTodoRequest { Title = "  New title  " });
+
+        Assert.NotNull(result);
+        Assert.Equal("New title", result!.Title);
+        Assert.Equal(id, repository.LastUpdatedId);
+        Assert.Equal("New title", repository.LastUpdatedTitle);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenNotExists_ReturnsNull()
+    {
+        var id = Guid.NewGuid();
+        var service = new TodoService(new FakeTodoRepository { UpdatedTitleItem = null });
+
+        var result = await service.UpdateAsync(id, new UpdateTodoRequest { Title = "Changed" });
+
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task UpdateAsync_WithEmptyTitle_ThrowsArgumentException(string title)
+    {
+        var service = new TodoService(new FakeTodoRepository());
+
+        var action = () => service.UpdateAsync(Guid.NewGuid(), new UpdateTodoRequest { Title = title });
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(action);
+        Assert.Equal("request", exception.ParamName);
+    }
+
+    [Fact]
     public async Task MarkAsCompletedAsync_WhenExists_ReturnsMappedUpdatedResponse()
     {
         var id = Guid.NewGuid();
@@ -182,6 +230,9 @@ public class TodoServiceTests
         public TodoItem? UpdatedItem { get; set; }
         public Guid LastMarkedAsCompletedId { get; private set; }
         public bool LastMarkedAsCompletedValue { get; private set; }
+        public TodoItem? UpdatedTitleItem { get; set; }
+        public Guid LastUpdatedId { get; private set; }
+        public string LastUpdatedTitle { get; private set; } = string.Empty;
 
         public Task<List<TodoItem>> GetAllAsync(CancellationToken cancellationToken = default)
         {
@@ -203,6 +254,13 @@ public class TodoServiceTests
 
         public Task<TodoItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(ItemById);
+
+        public Task<TodoItem?> UpdateTitleAsync(Guid id, string title, CancellationToken cancellationToken = default)
+        {
+            LastUpdatedId = id;
+            LastUpdatedTitle = title;
+            return Task.FromResult(UpdatedTitleItem);
+        }
 
         public Task<TodoItem?> MarkAsCompletedAsync(Guid id, bool isCompleted, CancellationToken cancellationToken = default)
         {
